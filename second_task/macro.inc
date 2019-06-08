@@ -35,3 +35,9 @@
 %macro colon 2
 	colon %1, %2, 0
 %endmacro
+
+%macro const 2
+	native %1, %2
+		push qword %2
+		jmp next
+%endmacro
