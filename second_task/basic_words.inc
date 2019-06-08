@@ -114,7 +114,7 @@ native 'r>', ret_pop
 	push rax
 	jmp next
 
-native 'r@', ret_peek
+native 'r@', ret_fetch
 	push qword [rstack]
 	jmp next
 
