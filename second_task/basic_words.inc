@@ -106,11 +106,13 @@ native "lor", lor
 
 native '>r', ret_push
 	pop rax
-	rpush rax
+	sub rstack, 8
+	mov qword [rstack], rax
 	jmp next
 
 native 'r>', ret_pop
-	rpop rax
+	mov rax, qword [rstack]
+	add rstack, 8
 	push rax
 	jmp next
 
