@@ -1,7 +1,6 @@
 %define _lw 0 						;last word
 
 %macro native 3
-
 	section .data
 		wh_ %+ %2 : dq _lw 			;previous word
 			db 0
@@ -9,7 +8,6 @@
 			db %3				;immediate flag
 	%define _lw wh_ %+ %2
 		xt_ %+ %2 : dq i_ %+ %2	;execution token
-
 	section .text
 		i_ %+ %2 :				;implementatio
 %endmacro
@@ -21,7 +19,6 @@
 
 
 %macro colon 3
-
 	section .data
 		wh_ %+ %2 : dq _lw			;previous word
 			db 0
@@ -40,4 +37,14 @@
 	native %1, %2
 		push qword %2
 		jmp next
+%endmacro
+
+%macro branch 1 
+dq xt_branch
+dq %1
+%endmacro
+
+%macro branch0 1 
+dq xt_branch0
+dq %1 
 %endmacro
