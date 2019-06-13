@@ -278,6 +278,7 @@ colon 'create', create
 	dq xt_char_comma
 	dq xt_exit
 
+; start word definition
 colon ':', colon
 .restart:
 	dq xt_input_buf, xt_read_word
@@ -286,3 +287,9 @@ colon ':', colon
 	dq xt_lit, 1, xt_state, xt_write
 	dq xt_lit, i_docol, xt_comma
 	dq xt_exit
+
+; end the current word definition
+colon ";", semicolon, 1
+    dq xt_lit, 0, xt_state, xt_write
+    dq xt_lit, xt_exit, xt_comma
+    dq xt_exit
