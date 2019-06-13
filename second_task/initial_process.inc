@@ -8,7 +8,7 @@ const 'last_word', last_word
 const 'state', state
 
 ; ( -- dict_pointer_address )
-const 'dict-pointer', dicp
+const 'dict_pointer', dict_pointer
 
 ;( buffer -- char ) 
 ; read char in the buffer and copy to the stack
@@ -20,7 +20,7 @@ colon 'read-char', read_char
 	dq xt_lit, 0
 	dq xt_ret_pop
 	dq xt_lit, 1
-	TIMES 3 db x_lit, 0
+	TIMES 3 db xt_lit, 0
 	dq xt_syscall
 	dq xt_drop, xt_drop, xt_dup
 	dq xt_ret_pop, xt_write_char
@@ -29,11 +29,12 @@ colon 'read-char', read_char
 ;( buffer -- 0/start_address )
 ; read word in the buffer
 colon 'read-word', read_word
-	xt_ret_push	;address of first char
+	dq xt_ret_push	;address of first char
 .skip:	
 	dq xt_ret_fetch, xt_read_char
 	dq xt_ret_push
-	dq xt_ret_fetch, branch0 .no_input
+	dq xt_ret_fetch
+	branch0 .no_input
 	dq xt_ret_fetch, xt_lit, ' ', xt_equals
 	dq xt_ret_fetch, xt_lit, 10, xt_equals, xt_or
 	dq xt_ret_fetch, xt_lit, 13, xt_equals, xt_or,
@@ -44,7 +45,8 @@ colon 'read-word', read_word
 	dq xt_ret_fetch, xt_ret_fetch, xt_plus	
 	dq xt_read_char
 	dq xt_ret_push
-	dq xt_ret_fetch, branch0 .quit
+	dq xt_ret_fetch
+	branch0 .quit
 	dq xt_ret_fetch, xt_lit, ' ', xt_equals
 	dq xt_ret_fetch, xt_lit, 10, xt_equals, xt_or
 	dq xt_ret_fetch, xt_lit, 13, xt_equals, xt_or,
@@ -119,9 +121,9 @@ colon "get-xt", get_xt
 ; ( xt -- )
 ; add xt to the current word in dictionary
 colon ',', comma
-	dq xt_dicp, xt_fetch, xt_write
-	dq xt_lit, 8, xt_dicp, xt_fetch, xt_plus
-	dq xt_dicp, xt_write, xt_exit
+	dq xt_dict_pointer, xt_fetch, xt_write
+	dq xt_lit, 8, xt_dict_pointer, xt_fetch, xt_plus
+	dq xt_dict_pointer, xt_write, xt_exit
 
 colon '>', more
 	dq xt_double_dup, xt_less, xt_ret_push, xt_equals, xt_ret_pop, xt_or, xt_not
@@ -182,15 +184,10 @@ colon 'print-str', print_str
 	TIMES 3 dq xt_lit, 0
 	dq xt_syscall, xt_drop, xt_drop, xt_exit
 
-colon 'start', start
-	dq xt_lit, 0		; stdin
-	dq xt_interpret
-	dq xt_bye
-
 colon "interpret", interpret
 .loop:
 	dq xt_input_buf, xt_read_word 	; ( -- 0/buffer )
-	dq xt_branch0, .end_of_input
+	dq xt_zero_branch, .end_of_input
 	dq xt_input_buf	
 .start:
 	dq xt_dup, xt_find		; ( inbuf -- inbuf dictaddr )
@@ -220,10 +217,10 @@ colon "interpret", interpret
 	branch0 .exit
 	; when compiling, check if it was after a branch
 	; ( num )
-	dq xt_dicp, xt_lit, 8, xt_minus, xt_fetch
+	dq xt_dict_pointer, xt_lit, 8, xt_minus, xt_fetch
 	; ( num prev_xt )
 	dq xt_dup
-	dq xt_lit, xt_branch0		; ( num prev_xt prev_xt xt_branch0 )
+	dq xt_lit, xt_zero_branch		; ( num prev_xt prev_xt xt_zero_branch )
 	dq xt_equals, xt_not
 	branch0 .is_branch
 	dq xt_dup
@@ -242,6 +239,8 @@ colon "interpret", interpret
 	dq xt_print_str
 	dq xt_lit, error_message, xt_print_str
 .exit:
+	branch .loop
+.end_of_input:
 	dq xt_exit
 
 colon 'bye', bye
@@ -253,3 +252,37 @@ colon 'bye', bye
 	dq xt_lit, 0
 	dq xt_lit, 0
 	dq xt_syscall
+
+colon "c,", char_comma
+	  dq xt_dict_pointer, xt_fetch, xt_write_char
+	  dq xt_dict_pointer, xt_fetch, xt_lit, 1, xt_plus
+	  dq xt_dict_pointer, xt_fetch, xt_exit
+
+; ( addr str - ) copy str to addr
+colon "string-copy", string_copy
+.loop:
+	dq xt_double_dup, xt_fetch_char, xt_ret_push, xt_ret_fetch, xt_swap, xt_write_char
+	dq xt_lit, 1, xt_plus, xt_swap, xt_lit, 1, xt_plus, xt_swap
+	dq xt_ret_pop, xt_not
+	branch0 .loop
+	dq xt_drop, xt_drop, xt_exit
+
+colon 'create', create
+	dq xt_dict_pointer, xt_fetch                		; word start
+	dq xt_last_word, xt_fetch, xt_comma 			; fill `link`
+	dq xt_last_word, xt_write           			; update `last_word`
+	dq xt_lit, 0, xt_char_comma
+	dq xt_dup, xt_dict_pointer, xt_fetch, xt_swap, xt_string_copy
+	dq xt_str_length, xt_dict_pointer
+	dq xt_fetch, xt_plus, xt_lit, 1, xt_plus, xt_dict_pointer, xt_write
+	dq xt_char_comma
+	dq xt_exit
+
+colon ':', colon
+.restart:
+	dq xt_input_buf, xt_read_word
+	branch0 .restart
+	dq xt_lit, 0, xt_input_buf, xt_create
+	dq xt_lit, 1, xt_state, xt_write
+	dq xt_lit, i_docol, xt_comma
+	dq xt_exit

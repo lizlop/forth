@@ -149,7 +149,7 @@ native 'execute', execute
 	jmp [rax]
 
 native 'forth-dp', forth_dp
-	push dp
+	push mem_pointer
 	jmp next
 
 native 'docol', docol
@@ -204,3 +204,4 @@ native 'syscall', syscall
 	push rax
 	push rdx
 	jmp next
+
