@@ -1,14 +1,14 @@
 ; ( -- input_buffer_address )
-const 'input_buf', input_buf
+const 'input-buf', input_buf
 
 ; ( -- last_word_address )
-const 'last_word', last_word
+const 'last-word', last_word
 
 ; ( -- state_address )
 const 'state', state
 
 ; ( -- dict_pointer_address )
-const 'dict_pointer', dict_pointer
+const 'dict-pointer', dict_pointer
 
 ;( buffer -- char ) 
 ; read char in the buffer and copy to the stack
