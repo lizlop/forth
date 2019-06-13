@@ -10,6 +10,26 @@ const 'state', state
 ; ( -- dict_pointer_address )
 const 'dict-pointer', dict_pointer
 
+; Read word and place its address on stack
+; ( -- a )
+colon "'", tick, 1
+	dq xt_inbuf
+	dq xt_read_word
+	dq xt_find
+	branch0 .no_such_word
+	dq xt_get_xt			;( header -- xt )
+	dq xt_state, xt_fetch
+	branch0 .interpret
+	dq xt_lit, xt_lit		;( xt -- xt lit )
+	dq xt_comma			;( xt lit -- xt ) lit added to current word definition   
+	dq xt_comma			;( xt -- ) xt added to current word definition
+.interpret:
+	dq xt_exit			;( xt )
+.no_such_word: 				
+	dq xt_inbuf, xt_print_str
+	dq xt_lit, msg_no_such_word, xt_print_str
+	dq xt_exit
+
 ;( buffer -- char ) 
 ; read char in the buffer and copy to the stack
 colon 'read-char', read_char
